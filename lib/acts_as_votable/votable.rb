@@ -52,28 +52,33 @@ module ActsAsVotable
           vote = votes.first
         end
 
+
+        vote_flag = ActsAsVotable::Vote.word_is_a_vote_for(options[:vote])
+        toggle_vote = options[:toggle_vote]
+
         last_update = vote.updated_at
+        previous_vote_flag = vote.vote_flag
 
-        vote.vote_flag = ActsAsVotable::Vote.word_is_a_vote_for(options[:vote])
-
-        if vote.save
-          self.vote_registered = true if last_update != vote.updated_at
-          update_cached_votes
-          return true
-        else
+        updated = case
+        when vote.new_record? || toggle_vote
+          vote.vote_flag = vote_flag
+          self.vote_registered = vote.save && last_update != vote.updated_at
+        when vote_flag != previous_vote_flag
+          vote.delete
+          true
+        when vote_flag == previous_vote_flag
           self.vote_registered = false
-          return false
         end
+        update_cached_votes if updated
 
-       
       end
 
-      def vote_up voter
-        self.vote :voter => voter, :vote => true
+      def vote_up(voter, toggle_vote = true)
+        self.vote :voter => voter, :vote => true, :toggle_vote => toggle_vote
       end
 
-      def vote_down voter
-        self.vote :voter => voter, :vote => false
+      def vote_down(voter, toggle_vote = true)
+        self.vote :voter => voter, :vote => false, :toggle_vote => toggle_vote
       end
 
       # caching
@@ -100,7 +105,7 @@ module ActsAsVotable
 
       # results
       def find_votes extra_conditions = {}
-        ActsAsVotable::Vote.find(:all, :conditions => default_conditions.merge(extra_conditions))
+        ActsAsVotable::Vote.where(default_conditions.merge(extra_conditions))
       end
       alias :votes :find_votes
 

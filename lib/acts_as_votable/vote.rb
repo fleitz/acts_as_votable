@@ -31,6 +31,7 @@ module ActsAsVotable
     def self.default_voting_args
       {
         :vote => true,
+        :toggle_vote => true,
       }
     end
 

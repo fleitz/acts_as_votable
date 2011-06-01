@@ -115,8 +115,6 @@ describe ActsAsVotable::Votable do
         votable2.vote_registered?.should be false
       end
 
-
-
       describe "with cached votes" do
 
         before(:each) do
